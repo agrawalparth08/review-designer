@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Review Designer</title>
+<meta name="description" content="Build an independent Claude review: choose the setup, build four reviewer agents, track what each review found.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#24103D;--mut:#5B4A72;--line:#E4DCEE;--bg:#FBF8F3;--card:#fff;--p:#A100FF;--p2:#7B2FD0;--soft:#F3E9FF;--or:#FF7A45;--ok:#1F8A5B}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--ink:#F1EAFB;--mut:#B9A9D3;--line:#3A2A55;--bg:#140A22;--card:#1E1231;--soft:#2A1A44}}
+:root[data-theme=dark]{--ink:#F1EAFB;--mut:#B9A9D3;--line:#3A2A55;--bg:#140A22;--card:#1E1231;--soft:#2A1A44}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px}
+header{padding:48px 0 24px}.eb{font:500 12px 'IBM Plex Mono',monospace;letter-spacing:.12em;color:var(--p);text-transform:uppercase}
+h1{font-size:clamp(32px,5vw,52px);line-height:1.08;margin:10px 0 12px;letter-spacing:-.02em}h1 b{color:var(--p)}
+.lede{color:var(--mut);max-width:640px;font-size:18px}
+nav{display:flex;gap:8px;overflow-x:auto;margin:28px 0 8px;position:sticky;top:0;background:var(--bg);padding:10px 0;z-index:5}
+nav button{white-space:nowrap;flex:none;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:10px 16px;border-radius:999px;font:600 14px Inter;cursor:pointer}
+nav button.on{background:var(--p);border-color:var(--p);color:#fff}
+section{display:none;padding:16px 0 64px}section.on{display:block}
+h2{font-size:28px;margin:8px 0 6px;letter-spacing:-.01em}.sub{color:var(--mut);margin:0 0 24px;max-width:680px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px}
+.grid{display:grid;gap:16px}.g2{grid-template-columns:1fr 1fr}.g4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:800px){.g2,.g4{grid-template-columns:1fr}}
+.q{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:16px 0;border-bottom:1px solid var(--line)}.q:last-child{border:0}
+.q small{display:block;color:var(--mut)}
+.yn{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;flex:none}.yn button{border:0;background:none;color:var(--ink);padding:8px 16px;font:600 14px Inter;cursor:pointer}.yn button.on{background:var(--ink);color:var(--bg)}
+.tier{border-left:6px solid var(--p);padding:20px 22px}.tier .n{font:500 12px 'IBM Plex Mono';color:var(--p);letter-spacing:.1em}.tier h3{margin:6px 0 8px;font-size:24px}
+.tier ul{margin:8px 0 0;padding-left:20px;color:var(--mut)}
+label{font-weight:600;font-size:14px;display:block;margin:0 0 6px}label small{font-weight:400;color:var(--mut)}
+input,textarea{width:100%;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:10px 12px;font:15px Inter}textarea{min-height:70px;resize:vertical}
+.f{margin-bottom:16px}
+.per{border-top:5px solid var(--c);display:flex;flex-direction:column}.per h3{margin:0;font-size:20px}.per .role{color:var(--mut);font-size:14px;margin:4px 0 12px}
+.per pre{white-space:pre-wrap;font:13px/1.5 'IBM Plex Mono',monospace;background:var(--soft);border-radius:10px;padding:12px;margin:0 0 12px;flex:1;max-height:320px;overflow:auto}
+.sees{font-size:13px;margin:0 0 12px}.sees b{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
+.btns{display:flex;gap:8px;flex-wrap:wrap}.b{border:1px solid var(--p);background:none;color:var(--p);border-radius:8px;padding:8px 12px;font:600 13px Inter;cursor:pointer}.b.fill{background:var(--p);color:#fff}
+.flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0 24px;font-size:14px}.flow span{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 12px}.flow i{color:var(--p);font-style:normal}
+.check li{margin:6px 0}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em}
+.stat{font-size:34px;font-weight:700}.stat+div{color:var(--mut);font-size:13px}
+.tag{font-size:12px;padding:2px 8px;border-radius:999px;background:var(--soft)}
+.links a{color:var(--p);font-weight:600;margin-right:18px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;color:var(--mut);font-size:13px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;opacity:0;transition:.3s;pointer-events:none}.toast.on{opacity:1}
+</style></head><body>
+<div class="wrap">
+<header><div class="eb">Independence by Design</div>
+<h1>Build a Claude review that is <b>really a second opinion</b></h1>
+<p class="lede">Choose the setup your work needs. Build the four kinds of reviewer agent for your case. Keep a record of what each review found.</p>
+</header>
+
+<nav><button class="on" data-t="setup">1 · Choose the setup</button><button data-t="build">2 · Build your agents</button><button data-t="log">3 · Review log</button></nav>
+
+<section id="setup" class="on"><h2>Which setup does this work need?</h2>
+<p class="sub">Answer three questions about one piece of work. If none is true, one chat is enough. All three true means separate Projects.</p>
+<div class="grid g2"><div class="card" id="qs"></div><div class="card tier" id="tier"></div></div></section>
+
+<section id="build"><h2>Build your reviewer agents</h2>
+<p class="sub">These are the instructions from the session demo runs. Add your case and each agent updates. Paste each one into its own Claude Project, or download it as a Claude Code subagent.</p>
+<div class="grid g2"><div class="card">
+<div class="f"><label>The decision <small>what the work recommends</small></label><input id="dec" value="Enter the Singapore market first"></div>
+<div class="f"><label>The evidence <small>what each reviewer gets</small></label><input id="ev" value="the evidence pack, items E1 to E7"></div>
+</div><div class="card">
+<div class="f"><label>Role reviewer seats <small>one per line, each gets its own agent</small></label><textarea id="seats">CFO | payback, downside and capital at risk
+Regional market expert | competitors and client demand
+Chief Risk Officer | the scenario in which this fails</textarea></div>
+</div></div>
+<p style="margin:24px 0 4px;font-weight:600">Run them in this order. Each one sees only what it needs.</p>
+<div class="flow"><span>Your working chat</span><i>→</i><span>Challenger</span><i>+</i><span>Verifier</span><i>→</i><span>Role reviewers</span><i>→</i><span>Chair</span><i>→</i><span>You sign</span></div>
+<div class="grid g4" id="pers"></div>
+<div class="card" style="margin-top:24px"><h3 style="margin:0 0 8px">Before each review</h3><ul class="check">
+<li>Use a new chat inside the agent's Project. Do not reuse the working chat.</li>
+<li>Paste the decision and the evidence. Do not paste the history, the drafts or the team's framing.</li>
+<li>Check Memory. A new chat isolates history, but Memory can still carry context in. Use Incognito or turn Memory off for the review.</li>
+<li>For the highest stakes, use a fresh Project per case, so project memory from earlier cases does not carry in.</li>
+<li>Give the Chair the reviews with the names removed.</li></ul>
+<div class="btns" style="margin-top:12px"><button class="b fill" id="all">Download all as Claude Code subagents</button></div></div></section>
+
+<section id="log"><h2>Review log</h2>
+<p class="sub">Log each review you run. Over time, you see which work needed an independent review. Entries stay in this browser only.</p>
+<div class="grid g4" id="stats" style="margin-bottom:16px"></div>
+<div class="card"><div class="grid g4">
+<div class="f"><label>Work</label><input id="lw" placeholder="Client pricing proposal"></div>
+<div class="f"><label>Setup</label><input id="ls" list="setups" placeholder="Fresh-chat review"><datalist id="setups"><option>One chat</option><option>Fresh-chat review</option><option>Role-separated Projects</option></datalist></div>
+<div class="f"><label>Did the review find something?</label><input id="lf" list="yn" placeholder="Yes"><datalist id="yn"><option>Yes</option><option>No</option></datalist></div>
+<div class="f"><label>What it found</label><input id="ln" placeholder="Margin assumption had no source"></div></div>
+<div class="btns"><button class="b fill" id="add">Add to log</button><button class="b" id="csv">Export CSV</button></div></div>
+<div class="card" style="margin-top:16px;overflow:auto"><table><thead><tr><th>Date</th><th>Work</th><th>Setup</th><th>Found</th><th>Note</th><th></th></tr></thead><tbody id="rows"></tbody></table></div></section>
+</div>
+<footer><div class="wrap">From the session "Independence by Design" by Parth Agrawal. An independent Claude review is an extra quality step. It never replaces the professional who signs.</div></footer>
+<div class="toast" id="toast"></div>
+<script>
+const $=s=>document.querySelector(s),T=m=>{const t=$('#toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),1600)};
+const store={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button,section').forEach(x=>x.classList.remove('on'));b.classList.add('on');$('#'+b.dataset.t).classList.add('on')});
+
+// 1 setup
+const Q=[['Are the roles in real tension?','A CFO and a market lead would disagree about this work.'],['Do the stakes justify the time?','A confident wrong answer costs money or trust.'],['Has one chat already proved not enough?','A same-chat review missed something before, or someone will challenge this.']];
+const A=store.get('rd-q',[null,null,null]);
+const TIERS=[
+ ['TIER 1','One chat','Keep the context. For work that must stay consistent, context is a strength.',['Summaries, drafts, restructuring','Cost: none']],
+ ['TIER 2','Fresh-chat review','Produce in one chat. Challenge in a new one that gets the conclusion and the evidence, not the route.',['Client recommendations, pricing, due diligence','Cost: one more chat','Use the Challenger, and the Verifier if facts carry the case']],
+ ['TIER 3','Role-separated Projects','Challenge and Verify each run in their own Project. Role reviewers add real tension. A Chair names the deciding concern.',['Board cases, acquisitions, regulatory submissions','Cost: materially more time and tokens','Build all four agents in step 2']]];
+function drawQ(){$('#qs').innerHTML=Q.map((q,i)=>`<div class="q"><div>${q[0]}<small>${q[1]}</small></div><div class="yn">${['Yes','No'].map(v=>`<button data-i="${i}" data-v="${v}" class="${A[i]===v?'on':''}">${v}</button>`).join('')}</div></div>`).join('');
+ $('#qs').querySelectorAll('button').forEach(b=>b.onclick=()=>{A[b.dataset.i]=b.dataset.v;store.set('rd-q',A);drawQ()});
+ const y=A.filter(v=>v==='Yes').length,done=A.every(v=>v);const t=TIERS[!done?0:y===3?2:y>=1?1:0];
+ $('#tier').innerHTML=done?`<div class="n">${y} OF 3 · ${t[0]}</div><h3>${t[1]}</h3><p>${t[2]}</p><ul>${t[3].map(x=>`<li>${x}</li>`).join('')}</ul>`:`<div class="n">ANSWER ALL THREE</div><h3>Your setup appears here</h3><p style="color:var(--mut)">Most work needs one chat. Independence is for the work where a confident wrong answer is expensive.</p>`}
+drawQ();
+
+// 2 agents (prompts as run in the session demo)
+const P=()=>{const d=$('#dec').value.trim()||'the recommendation',e=$('#ev').value.trim()||'the evidence';
+ const seats=$('#seats').value.split('\n').map(l=>l.split('|').map(s=>s.trim())).filter(s=>s[0]);
+ return [
+ {k:'challenger',n:'Challenger',c:'#A100FF',r:'Tests whether the work is warranted by the evidence.',sees:'The conclusion and the evidence. Not the route, the drafts or the framing.',
+  t:`You are the Challenger on a review panel. Your job is to test whether a recommendation is warranted by the evidence, not to improve its wording. The recommendation is: "${d}". Check every claim in it against ${e}. Name disconfirming evidence explicitly. You did not write this recommendation and owe it no loyalty.`},
+ {k:'verifier',n:'Verifier',c:'#3E8AB8',r:'Checks facts, not strategy.',sees:'The claims and the sources. Not the argument.',
+  t:`You are the Verifier on a review panel. You check facts, not strategy. For each factual claim in the document, quote the item in ${e} that supports it, or mark it UNSUPPORTED or CONTRADICTED and quote what contradicts it. Do not assess whether "${d}" is a good idea. End with one line starting COUNT: giving supported / unsupported / contradicted totals.`},
+ ...seats.map(([s,f])=>({k:'reviewer-'+s.toLowerCase().replace(/[^a-z0-9]+/g,'-'),n:s,c:'#FF7A45',r:'Role reviewer: one seat only.',sees:'The recommendation and the evidence. Not the other reviews.',
+  t:`You are the ${s} reviewing this recommendation: "${d}". You care about ${f||'the risks from your seat'}. Review from this seat only. Test whether ${e} supports the recommendation. You did not write this recommendation. Answer in at most 180 words: your top concerns, each tied to an evidence item, and a one-line VERDICT:.`})),
+ {k:'chair',n:'Chair',c:'#24103D',r:'Finds the one point that decides it.',sees:'The recommendation and the reviews, with the names removed.',
+  t:`You chair the committee that decides on: "${d}". You see anonymised reviews. Do not average them. Identify where they agree, where they conflict, which concern is decisive, and what the committee should decide. 200 words max, end with DECISION:.`}]};
+const md=a=>`---\nname: ${a.k}\ndescription: ${a.n}. ${a.r} Use in a fresh context, never in the chat that wrote the work.\ntools: Read, Grep, Glob\n---\n\n${a.t}\n`;
+const dl=(f,s)=>{const u=URL.createObjectURL(new Blob([s],{type:'text/markdown'}));const a=document.createElement('a');a.href=u;a.download=f;a.click();URL.revokeObjectURL(u)};
+function drawP(){const ps=P();$('#pers').innerHTML=ps.map((a,i)=>`<div class="card per" style="--c:${a.c}"><h3>${a.n}</h3><div class="role">${a.r}</div><p class="sees"><b>Sees</b>${a.sees}</p><pre>${a.t.replace(/</g,'&lt;')}</pre><div class="btns"><button class="b fill" data-c="${i}">Copy for Project</button><button class="b" data-d="${i}">Subagent .md</button></div></div>`).join('');
+ $('#pers').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{navigator.clipboard.writeText(ps[b.dataset.c].t).then(()=>T('Copied. Paste into the Project instructions.'),()=>T('Copy failed. Select the text instead.'))});
+ $('#pers').querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{const a=ps[b.dataset.d];dl(a.k+'.md',md(a))});
+ store.set('rd-in',{d:$('#dec').value,e:$('#ev').value,s:$('#seats').value})}
+const sv=store.get('rd-in',null);if(sv){$('#dec').value=sv.d;$('#ev').value=sv.e;$('#seats').value=sv.s}
+['#dec','#ev','#seats'].forEach(s=>$(s).oninput=drawP);drawP();
+$('#all').onclick=()=>dl('review-agents.md',`# Review agents\n\nSave each block as .claude/agents/<name>.md\n\n`+P().map(a=>'```markdown\n'+md(a)+'```').join('\n\n'));
+
+// 3 log
+let L=store.get('rd-log',[]);
+function drawL(){const n=L.length,f=L.filter(r=>/^y/i.test(r.f)).length,ind=L.filter(r=>!/one chat/i.test(r.s)).length,fi=L.filter(r=>!/one chat/i.test(r.s)&&/^y/i.test(r.f)).length;
+ $('#stats').innerHTML=[[n,'reviews logged'],[n?Math.round(f/n*100)+'%':'0%','found something'],[ind,'independent reviews'],[ind?Math.round(fi/ind*100)+'%':'0%','of those found something']].map(s=>`<div class="card"><div class="stat">${s[0]}</div><div>${s[1]}</div></div>`).join('');
+ $('#rows').innerHTML=L.map((r,i)=>`<tr><td>${r.d}</td><td>${esc(r.w)}</td><td><span class="tag">${esc(r.s)}</span></td><td>${esc(r.f)}</td><td>${esc(r.n)}</td><td><button class="b" data-x="${i}">Remove</button></td></tr>`).join('')||'<tr><td colspan="6" style="color:var(--mut)">No reviews yet.</td></tr>';
+ $('#rows').querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>{L.splice(b.dataset.x,1);store.set('rd-log',L);drawL()})}
+const esc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+$('#add').onclick=()=>{const w=$('#lw').value.trim();if(!w)return T('Name the work first.');L.unshift({d:new Date().toISOString().slice(0,10),w,s:$('#ls').value||'Fresh-chat review',f:$('#lf').value||'No',n:$('#ln').value});store.set('rd-log',L);['#lw','#ls','#lf','#ln'].forEach(s=>$(s).value='');drawL()};
+$('#csv').onclick=()=>dl('review-log.csv','date,work,setup,found,note\n'+L.map(r=>[r.d,r.w,r.s,r.f,r.n].map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\n'));
+drawL();
+</script></body></html>
